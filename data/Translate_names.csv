@@ -1,0 +1,41 @@
+term;English;French
+Leaf_Fv.ZnMnFeCuBMgCaKPN;Leaf[Fv|Zn,Mn,Fe,Cu,B,Mg,Ca,K,P,N];Foliaire[Fv|Zn,Mn,Fe,Cu,B,Mg,Ca,K,P,N]
+Leaf_Mn.Fe;Leaf[Mn|Fe];Foliaire[Mn|Fe]
+Leaf_ZnCuBMgCaKPN.MnFe;Leaf[Zn,Cu,B,Mg,Ca,K,P,N|Mn,Fe];Foliaire[Zn,Cu,B,Mg,Ca,K,P,N|Mn,Fe]
+Leaf_Cu.Zn;Leaf[Cu|Zn];Foliaire[Cu|Zn]
+Leaf_B.ZnCu;Leaf[B|Zn,Cu];Foliaire[B|Zn,Cu]
+Leaf_MgCaKPN.ZnCuB;Leaf[Mg,Ca,K,P,N|Zn,Cu,B];Foliaire[Mg,Ca,K,P,N|Zn,Cu,B]
+Leaf_Ca.Mg;Leaf[Ca|Mg];Foliaire[Ca|Mg]
+Leaf_K.MgCa;Leaf[K|Mg,Ca];Foliaire[K|Mg,Ca]
+Leaf_PN.MgCaK;Leaf[P,N|Mg,Ca,K];Foliaire[P,N|Mg,Ca,K]
+Leaf_P.N;Leaf[P|N];Foliaire[P|N]
+soil_Fv.FeBMnCuZnMgKAlPCa;Soil[Fv|Fe,B,Mn,Cu,Zn,Mg,K,Al,P,Ca];Sol[Fv|Fe,B,Mn,Cu,Zn,Mg,K,Al,P,Ca]
+soil_Zn.Mn;Soil[Zn|Mn];Sol[Zn|Mn]
+soil_MnZn.FeBCuMgKAlPCa;Soil[Zn,Mn|Fe,B,Cu,Mg,K,Al,P,Ca];Sol[Zn,Mn|Fe,B,Cu,Mg,K,Al,P,Ca]
+soil_Al.Fe;Soil[Al|Fe];Sol[Al|Fe]
+soil_FeAl.Cu;Soil[Fe,Al|Cu];Sol[Fe,Al|Cu]
+soil_FeCuAl.BMgKPCa;Soil[Fe,Cu,Al|B,Mg,K,P,Ca];Sol[Fe,Cu,Al|B,Mg,K,P,Ca]
+soil_B.Mg;Soil[B|Mg];Sol[B|Mg]
+soil_BMg.Ca;Soil[B,Mg|Ca];Sol[B,Mg|Ca]
+soil_BMgCa.KP;Soil[B,Mg,Ca|K,P];Sol[B,Mg,Ca|K,P]
+soil_K.P;Soil[K|P];Sol[K|P]
+N_Fert;N dose (kg/ha);N dose (kg/ha)
+P_Fert;P dose (kg/ha);P dose (kg/ha)
+K_Fert;K dose (kg/ha);K dose (kg/ha)
+Mg_Fert;Mg dose (kg/ha);Mg dose (kg/ha)
+So_Fert;S dose (kg/ha);S dose (kg/ha)
+Ca_Fert;Ca dose (kg/ha);Ca dose (kg/ha)
+Zn_Fert;Zn dose (kg/ha);Zn dose (kg/ha)
+Cu_Fert;Cu dose (kg/ha);Cu dose (kg/ha)
+Bo_Fert;B dose (kg/ha);B dose (kg/ha)
+Mn_Fert;Mn dose (kg/ha);Mn dose (kg/ha)
+CEC;CEC;CEC
+PhEau;PhWater;PhEau
+PhTamp;PhTamp;PhTamp
+Regie_Conv;Conventional;Conventionel
+MO;Organic matter;Matière organique
+NDVI;NDVI;NDVI
+Type_soil_Sable;Soil Type: Sand;Type de sol: Sable
+mean_temp;Mean temperature;Température moyenne
+total_precip;Total precipitation;Précipitation total
+frozen;Nomber of frozen day;Nombre de jour de gel
