@@ -15,6 +15,7 @@ suppressPackageStartupMessages({
   library(readr)
   library(janitor)
   library(caret) 
+  library(kernlab) 
 })
 
 # ---- CORS & Error handling -----------------------------------
