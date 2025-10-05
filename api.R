@@ -199,27 +199,68 @@ gaussian_recipe <-
   step_normalize(all_numeric(), -all_outcomes()) %>%
   prep(training = NULL, retain = TRUE)
 
-# ---- Load models ---------------------------------------------
-models <- list()
-if (file.exists("gaussian_cranberry_model.rds")) {
-  m <- readRDS("gaussian_cranberry_model.rds")
-  if (inherits(m, "bundled_model")) m <- bundle::unbundle(m)
-  models[["gaussian_current_year"]] <- m
+# ---- Load models (single, robust block) ------------------------------------
+
+# Helper to unbundle safely if needed
+safe_unbundle <- function(m) {
+  if (requireNamespace("bundle", quietly = TRUE)) {
+    tryCatch(bundle::unbundle(m), error = function(e) m)
+  } else m
 }
 
-model_dir <- "next_year_list_xgboost"
-if (dir.exists(model_dir)) {
-  files <- list.files(model_dir, pattern = "\\.rds$", full.names = TRUE)
+# Helpers to pick first existing file/dir
+first_existing_file <- function(...) {
+  for (p in c(...)) if (file.exists(p)) return(p)
+  NA_character_
+}
+first_existing_dir <- function(...) {
+  for (p in c(...)) if (dir.exists(p)) return(p)
+  NA_character_
+}
+
+# Create models container once
+if (!exists("models", inherits = FALSE)) models <- list()
+
+# --- Load Gaussian (current-year) model -------------------------------------
+g_path <- first_existing_file(
+  "gaussian_cranberry_model.rds",
+  "data/gaussian_cranberry_model.rds",
+  "models/gaussian_cranberry_model.rds",
+  "gaussian_current_year.rds",
+  "data/gaussian_current_year.rds",
+  "models/gaussian_current_year.rds"
+)
+
+if (!is.na(g_path)) {
+  try(cat("[loader] gaussian:", g_path, "\n"), silent = TRUE)
+  g <- readRDS(g_path)
+  models[["gaussian_current_year"]] <- safe_unbundle(g)
+} else {
+  try(cat("[loader] gaussian RDS NOT FOUND (checked multiple paths)\n"), silent = TRUE)
+}
+
+# --- Load next-year balance models ------------------------------------------
+ny_dir <- first_existing_dir(
+  "next_year_list_xgboost",
+  "models/next_year_list_xgboost",
+  "data/next_year_list_xgboost"
+)
+
+if (!is.na(ny_dir)) {
+  files <- list.files(ny_dir, pattern = "\\.rds$", full.names = TRUE)
   for (f in files) {
-    nm <- gsub("\\.rds$", "", basename(f))
-    m <- readRDS(f)
-    if (inherits(m, "bundled_model")) m <- bundle::unbundle(m)
+    nm <- sub("\\.rds$", "", basename(f))
+    m  <- safe_unbundle(readRDS(f))
     models[[nm]] <- m
   }
+  try(cat("[loader] next-year models loaded:", length(files), "from", ny_dir, "\n"), silent = TRUE)
+} else {
+  try(cat("[loader] next-year model dir NOT FOUND\n"), silent = TRUE)
 }
 
+# --- Small helpers used later ----------------------------------------------
 has_model <- function(name) isTRUE(!is.null(models[[name]]))
-inv_sqrt <- function(x) pmax(x, 0)^2
+inv_sqrt  <- function(x) pmax(x, 0)^2
 
 # ---- Helpers -------------------------------------------------
 ensure_df <- function(payload) {
@@ -432,11 +473,30 @@ try_unbundle <- function(m) {
   m
 }
 
-# ---- Load models (robust) ----------------------------------------------------
-models <- list()
+# ---- Load models (simple & order-safe) --------------------------------------
 
-# Try multiple paths so it works locally and on Render
-gaussian_paths <- c(
+# Helpers FIRST (so we can call them below)
+safe_unbundle <- function(m) {
+  if (requireNamespace("bundle", quietly = TRUE)) {
+    tryCatch(bundle::unbundle(m), error = function(e) m)
+  } else m
+}
+
+first_existing_file <- function(...) {
+  for (p in c(...)) if (file.exists(p)) return(p)
+  NA_character_
+}
+
+first_existing_dir <- function(...) {
+  for (p in c(...)) if (dir.exists(p)) return(p)
+  NA_character_
+}
+
+# Do NOT wipe models if it already exists; otherwise create it once
+if (!exists("models", inherits = FALSE)) models <- list()
+
+# Gaussian model (current-year)
+g_path <- first_existing_file(
   "gaussian_cranberry_model.rds",
   "data/gaussian_cranberry_model.rds",
   "models/gaussian_cranberry_model.rds",
@@ -445,46 +505,31 @@ gaussian_paths <- c(
   "models/gaussian_current_year.rds"
 )
 
-safe_unbundle <- function(m) {
-  if (requireNamespace("bundle", quietly = TRUE)) {
-    tryCatch(bundle::unbundle(m), error = function(e) m)
-  } else m
-}
-
-find_first_existing <- function(paths) {
-  for (p in paths) if (file.exists(p)) return(p)
-  NA_character_
-}
-
-g_path <- find_first_existing(gaussian_paths)
 if (!is.na(g_path)) {
-  try(cat("[loader] Loading gaussian model from:", g_path, "\n"), silent = TRUE)
-  m <- readRDS(g_path)
-  m <- safe_unbundle(m)
-  models[["gaussian_current_year"]] <- m
+  try(cat("[loader] gaussian:", g_path, "\n"), silent = TRUE)
+  g <- readRDS(g_path)
+  models[["gaussian_current_year"]] <- safe_unbundle(g)
 } else {
-  try(cat("[loader] Gaussian model RDS not found. Looked in:\n  - ",
-          paste(gaussian_paths, collapse = "\n  - "), "\n"), silent = TRUE)
+  try(cat("[loader] gaussian RDS NOT FOUND (checked multiple paths)\n"), silent = TRUE)
 }
 
-# Next-year models directory (try a few locations)
-model_dir <- find_first_existing(c(
+# Next-year balance models (21 xgboost/tidymodels)
+ny_dir <- first_existing_dir(
   "next_year_list_xgboost",
   "models/next_year_list_xgboost",
   "data/next_year_list_xgboost"
-))
-if (!is.na(model_dir) && dir.exists(model_dir)) {
-  files <- list.files(model_dir, pattern = "\\.rds$", full.names = TRUE)
+)
+
+if (!is.na(ny_dir)) {
+  files <- list.files(ny_dir, pattern = "\\.rds$", full.names = TRUE)
   for (f in files) {
-    nm <- gsub("\\.rds$", "", basename(f))
-    m <- readRDS(f)
-    m <- safe_unbundle(m)
+    nm <- sub("\\.rds$", "", basename(f))
+    m  <- safe_unbundle(readRDS(f))
     models[[nm]] <- m
   }
-  try(cat("[loader] Loaded", length(files), "next-year models from", model_dir, "\n"),
-      silent = TRUE)
+  try(cat("[loader] next-year models loaded:", length(files), "from", ny_dir, "\n"), silent = TRUE)
 } else {
-  try(cat("[loader] No next-year model dir found.\n"), silent = TRUE)
+  try(cat("[loader] next-year model dir NOT FOUND\n"), silent = TRUE)
 }
 
 
