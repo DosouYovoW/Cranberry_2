@@ -14,10 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install R packages (r2u provides fast precompiled binaries)
-RUN Rscript -e "install.packages(c( \
-  'plumber','jsonlite','tidyverse','tidymodels','bundle','xgboost', \
-  'compositions','lubridate','recipes','readr','janitor' \
-), repos='${CRAN_REPO}')"
+RUN Rscript -e "install.packages(c('plumber','jsonlite','tidyverse','tidymodels','bundle','xgboost','compositions','lubridate','recipes','readr','janitor','caret'), repos='${CRAN_REPO}')"
 
 # Copy all project files
 WORKDIR /app
