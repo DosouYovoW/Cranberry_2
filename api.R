@@ -19,16 +19,24 @@ suppressPackageStartupMessages({
 })
 
 # ---- CORS & Error handling -----------------------------------
+#* @filter cors
 cors <- function(req, res) {
   res$setHeader("Access-Control-Allow-Origin", "*")
   res$setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
   res$setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
-  plumber::forward()
+  
+  if (req$REQUEST_METHOD == "OPTIONS") {
+    res$status <- 200
+    return(list())
+  } else {
+    plumber::forward()
+  }
 }
 
 as_error <- function(msg, code = 400) {
   list(error = TRUE, code = code, message = msg)
 }
+
 
 # ---- Variety encoders used in training -----------------------
 new_productive <- c("crimson queen", "demoranville", "haines",
