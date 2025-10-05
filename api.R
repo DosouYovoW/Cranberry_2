@@ -223,13 +223,33 @@ inv_sqrt <- function(x) pmax(x, 0)^2
 
 # ---- Helpers -------------------------------------------------
 ensure_df <- function(payload) {
-  if (is.list(payload) && !is.null(names(payload))) {
-    as_tibble(payload)
-  } else if (is.list(payload)) {
-    bind_rows(lapply(payload, as_tibble))
-  } else {
-    stop("Payload must be a JSON object or array of objects.")
+  # Accepts:
+  # - a single JSON object  -> 1-row tibble
+  # - an array of objects   -> rbind into tibble
+  # - vectors in fields     -> recycles length-1 fields to the max length
+  
+  # Case 1: array of row-objects
+  if (is.list(payload) && is.null(names(payload))) {
+    rows <- lapply(payload, function(x) tibble::as_tibble(x, .name_repair = "check_unique"))
+    return(dplyr::bind_rows(rows))
   }
+  
+  # Case 2: single object (possibly with vector-valued fields)
+  if (is.list(payload) && !is.null(names(payload))) {
+    # Determine target row count
+    lens <- vapply(payload, function(x) if (is.null(x)) 1L else length(x), integer(1))
+    n <- max(lens)
+    # Recycle length-1 columns; error if incompatible lengths
+    payload2 <- lapply(payload, function(x) {
+      if (is.null(x)) return(rep(NA, n))
+      if (length(x) == 1L) return(rep(x, n))
+      if (length(x) == n) return(x)
+      stop("Columns have incompatible lengths in JSON payload.")
+    })
+    return(tibble::as_tibble(payload2, .name_repair = "check_unique"))
+  }
+  
+  stop("Payload must be a JSON object or an array of objects.")
 }
 
 harmonize_inputs <- function(df) {
@@ -412,24 +432,61 @@ try_unbundle <- function(m) {
   m
 }
 
-# ---- Load models ------------------------------------------------------------
+# ---- Load models (robust) ----------------------------------------------------
 models <- list()
-if (file.exists("gaussian_cranberry_model.rds")) {
-  m <- readRDS("gaussian_cranberry_model.rds")
-  m <- try_unbundle(m)
-  models[["gaussian_current_year"]] <- m
+
+# Try multiple paths so it works locally and on Render
+gaussian_paths <- c(
+  "gaussian_cranberry_model.rds",
+  "data/gaussian_cranberry_model.rds",
+  "models/gaussian_cranberry_model.rds",
+  "gaussian_current_year.rds",
+  "data/gaussian_current_year.rds",
+  "models/gaussian_current_year.rds"
+)
+
+safe_unbundle <- function(m) {
+  if (requireNamespace("bundle", quietly = TRUE)) {
+    tryCatch(bundle::unbundle(m), error = function(e) m)
+  } else m
 }
 
-model_dir <- "next_year_list_xgboost"
-if (dir.exists(model_dir)) {
+find_first_existing <- function(paths) {
+  for (p in paths) if (file.exists(p)) return(p)
+  NA_character_
+}
+
+g_path <- find_first_existing(gaussian_paths)
+if (!is.na(g_path)) {
+  try(cat("[loader] Loading gaussian model from:", g_path, "\n"), silent = TRUE)
+  m <- readRDS(g_path)
+  m <- safe_unbundle(m)
+  models[["gaussian_current_year"]] <- m
+} else {
+  try(cat("[loader] Gaussian model RDS not found. Looked in:\n  - ",
+          paste(gaussian_paths, collapse = "\n  - "), "\n"), silent = TRUE)
+}
+
+# Next-year models directory (try a few locations)
+model_dir <- find_first_existing(c(
+  "next_year_list_xgboost",
+  "models/next_year_list_xgboost",
+  "data/next_year_list_xgboost"
+))
+if (!is.na(model_dir) && dir.exists(model_dir)) {
   files <- list.files(model_dir, pattern = "\\.rds$", full.names = TRUE)
   for (f in files) {
     nm <- gsub("\\.rds$", "", basename(f))
     m <- readRDS(f)
-    m <- try_unbundle(m)
+    m <- safe_unbundle(m)
     models[[nm]] <- m
   }
+  try(cat("[loader] Loaded", length(files), "next-year models from", model_dir, "\n"),
+      silent = TRUE)
+} else {
+  try(cat("[loader] No next-year model dir found.\n"), silent = TRUE)
 }
+
 
 #* Predict with a next-year model
 #* @param model_name:string
